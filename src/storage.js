@@ -110,13 +110,17 @@ export const registerUser = (userData) => {
   const newUser = {
     ...userData,
     id: userData.role === 'BRIDE' ? 'b_' + Date.now() : 'new_a_' + Date.now(),
-    profileImage: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userData.name) + '&background=random&size=400',
+    profileImage: 'https://ui-avatars.com/api/?name=' + encodeURIComponent(userData.name) + '&background=1a1a1a&color=d4af37&size=400',
     average_rating: 5.0, // New artists get default 5 star rating
     reviews_count: 0,
     specialty: 'Salon & Bridal Makeup', // Default specialty
     location: 'Delhi NCR',
     experience_years: 1,
-    bio: 'Professional artist ready to make your day special.'
+    bio: 'Professional artist ready to make your day special.',
+    portfolio: [],
+    blockedDates: [],
+    instagram: '',
+    isVerified: false
   };
   users.push(newUser);
   saveToStorage('users', users);

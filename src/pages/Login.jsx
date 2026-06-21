@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { loginUser, registerUser } from '../storage';
+import { useApp } from '../context/AppContext';
 import { motion } from 'framer-motion';
 import { User, Sparkles } from 'lucide-react';
 
@@ -14,24 +14,23 @@ export const Login = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
+  const { login, register } = useApp();
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isRegistering) {
-      const res = registerUser({ role: loginRole, name, email, phone, password });
+      const res = register({ role: loginRole, name, email, phone, password });
       if (res.success) {
         if (loginRole === 'ARTIST') navigate('/artist');
         else if (loginRole === 'BRIDE') navigate('/bride');
-        window.location.reload();
       } else {
         setError(res.message);
       }
     } else {
-      const user = loginUser(email, password);
+      const user = login(email, password);
       if (user && user.role === loginRole) {
         if (user.role === 'ARTIST') navigate('/artist');
         else if (user.role === 'BRIDE') navigate('/bride');
-        window.location.reload(); 
       } else {
         setError(`Invalid credentials for ${loginRole === 'BRIDE' ? 'Client' : 'Artist'}.`);
       }

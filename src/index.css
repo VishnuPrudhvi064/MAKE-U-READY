@@ -152,6 +152,33 @@ button {
   letter-spacing: 2px;
 }
 
+.nav-link {
+  font-weight: 500;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.2s ease;
+  font-size: 1.05rem;
+  letter-spacing: 0.5px;
+  position: relative;
+  cursor: pointer;
+}
+
+.nav-link:hover, .nav-link.active {
+  color: var(--primary-color);
+}
+
+.nav-link.active::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background-color: var(--primary-color);
+}
+
 /* Animations */
 @keyframes fadeUp {
   from { opacity: 0; transform: translateY(20px); }

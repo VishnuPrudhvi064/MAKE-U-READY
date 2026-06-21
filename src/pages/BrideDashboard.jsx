@@ -1,38 +1,69 @@
 import { useState, useEffect } from 'react';
-import { getBookingsForUser, getCurrentUser, getFromStorage, updateUser } from '../storage';
+import { useApp } from '../context/AppContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Clock, Calendar, Heart, MessageSquare, Settings, LayoutDashboard, ShoppingBag, Bell, ChevronRight, Star, Plus, DollarSign } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { MapPin, Clock, Calendar, Heart, MessageSquare, Settings, LayoutDashboard, ShoppingBag, Bell, ChevronRight, Star, Plus, DollarSign, X } from 'lucide-react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Avatar } from '../components/Avatar';
+import { PaymentModal } from '../components/PaymentModal';
 
 export const BrideDashboard = () => {
-  const [bookings, setBookings] = useState([]);
-  const [shortlist, setShortlist] = useState([]);
-  const [user, setUser] = useState(getCurrentUser());
-  const [activeTab, setActiveTab] = useState('Overview');
+  const { 
+    currentUser: user, users, bookings, shortlists, notifications, messages, 
+    updateProfile, toggleShortlist, updateBookingStatus, processPayment, addNewReview, sendMessage, markMessagesAsRead 
+  } = useApp();
+
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'Overview';
+  const setActiveTab = (tab) => setSearchParams(prev => { prev.set('tab', tab); return prev; });
   const [newWeddingDate, setNewWeddingDate] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [reviewModal, setReviewModal] = useState(null); // { booking }
+  const [chatUser, setChatUser] = useState(null);
+  const [msgText, setMsgText] = useState('');
+  const [activePaymentBooking, setActivePaymentBooking] = useState(null);
+
+  // Form states for reviews
+  const [reviewRating, setReviewRating] = useState(5);
+  const [reviewText, setReviewText] = useState('');
+
+  const myBookings = bookings.filter(b => b.brideId === user?.id);
+  const myShortlist = shortlists.filter(s => s.brideId === user?.id).map(s => users.find(u => u.id === s.artistId)).filter(Boolean);
+  const myNotifs = notifications.filter(n => n.userId === user?.id);
 
   useEffect(() => {
-    if (user) {
-      const userBookings = getBookingsForUser(user.id, 'BRIDE');
-      setBookings(userBookings);
-      
-      const allUsers = getFromStorage('users') || [];
-      const artists = allUsers.filter(u => u.role === 'ARTIST');
-      // Mock shortlist based on some top artists
-      setShortlist(artists.slice(0, 3));
-      
-      if (user.weddingDate) setNewWeddingDate(user.weddingDate);
-    }
-  }, [user?.id]);
+    if (user?.weddingDate) setNewWeddingDate(user.weddingDate);
+  }, [user?.weddingDate]);
 
   const handleUpdateSettings = (e) => {
     e.preventDefault();
-    updateUser(user.id, { weddingDate: newWeddingDate });
-    setUser(getCurrentUser());
+    updateProfile(user.id, { weddingDate: newWeddingDate });
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 3000);
   };
+
+  const submitReview = (e) => {
+    e.preventDefault();
+    addNewReview({
+      bookingId: reviewModal.id,
+      artistId: reviewModal.artistId,
+      brideId: user.id,
+      rating: reviewRating,
+      text: reviewText
+    });
+    setReviewModal(null);
+    setReviewText('');
+    setReviewRating(5);
+    alert('Thank you for your review!');
+  };
+
+  const handleSendMessage = (e) => {
+    e.preventDefault();
+    if (!msgText.trim()) return;
+    sendMessage(user.id, chatUser, msgText);
+    setMsgText('');
+  };
+
+  const chatPartners = [...new Set(messages.filter(m => m.senderId === user.id || m.receiverId === user.id).map(m => m.senderId === user.id ? m.receiverId : m.senderId))];
 
   const generateEventsTimeline = () => {
     if (!user || !user.weddingDate) return [];
@@ -42,76 +73,79 @@ export const BrideDashboard = () => {
     const reception = new Date(mainDate); reception.setDate(reception.getDate() + 1);
 
     const formatDate = (d) => d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const checkBooked = (type) => bookings.find(b => b.eventType?.toLowerCase().includes(type.toLowerCase()));
+    const checkBooked = (type) => myBookings.find(b => b.eventType?.toLowerCase().includes(type.toLowerCase()) && b.status !== 'CANCELLED');
 
     return [
       { name: 'Pre-Bridal Session', date: formatDate(preBridal), booked: !!checkBooked('Pre'), artist: checkBooked('Pre')?.artistName },
-      { name: 'Engagement', date: formatDate(engagement), booked: bookings.length > 0, artist: bookings[0]?.artistName },
+      { name: 'Engagement', date: formatDate(engagement), booked: myBookings.length > 0 && myBookings[0].status !== 'CANCELLED', artist: myBookings[0]?.artistName },
       { name: 'Wedding Day', date: formatDate(mainDate), booked: !!checkBooked('Wed'), artist: checkBooked('Wed')?.artistName },
       { name: 'Reception', date: formatDate(reception), booked: !!checkBooked('Reception'), artist: checkBooked('Reception')?.artistName }
     ];
   };
 
-  const getPremiumAvatar = (url) => {
-    if (url && url.includes('ui-avatars.com')) {
-      return url.replace(/background=[a-zA-Z0-9]+/, 'background=1a1a1a').replace(/color=[a-zA-Z0-9]+/, 'color=d4af37');
-    }
-    return url || `https://ui-avatars.com/api/?name=Artist&background=1a1a1a&color=d4af37&size=150`;
-  };
-
   if (!user || user.role !== 'BRIDE') {
-    return <div className="container" style={{paddingTop:'150px'}}>Access Denied. Please login as a Bride.</div>;
+    return <div className="container" style={{paddingTop:'150px'}}>Access Denied. Please login as a Client.</div>;
   }
 
-  const upcomingCount = bookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING').length;
-  const totalSpent = bookings.reduce((sum, b) => sum + (b.advancePaid || 0), 0);
+  const upcomingCount = myBookings.filter(b => b.status === 'CONFIRMED' || b.status === 'PENDING').length;
+  const totalSpent = myBookings.reduce((sum, b) => sum + (b.advancePaid || 0), 0);
 
   return (
     <>
-      {/* SUCCESS TOAST */}
       <AnimatePresence>
         {saveSuccess && (
-          <motion.div 
-            initial={{ opacity: 0, y: -50, x: '-50%' }} 
-            animate={{ opacity: 1, y: 0, x: '-50%' }} 
-            exit={{ opacity: 0, y: -50, x: '-50%' }}
-            style={{ 
-              position: 'fixed', 
-              top: '40px', 
-              left: '50%', 
-              zIndex: 9999, 
-              background: 'rgba(212, 175, 55, 0.85)', 
-              backdropFilter: 'blur(10px)',
-              WebkitBackdropFilter: 'blur(10px)',
-              border: '1px solid rgba(255, 255, 255, 0.2)',
-              color: '#1A0E10', 
-              padding: '1rem 2rem', 
-              borderRadius: '30px',
-              fontWeight: 700,
-              fontSize: '1.05rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.8rem',
-              boxShadow: '0 10px 30px rgba(212, 175, 55, 0.3)'
-            }}
+          <motion.div initial={{ opacity: 0, y: -50, x: '-50%' }} animate={{ opacity: 1, y: 0, x: '-50%' }} exit={{ opacity: 0, y: -50, x: '-50%' }}
+            style={{ position: 'fixed', top: '40px', left: '50%', zIndex: 9999, background: 'rgba(212, 175, 55, 0.85)', backdropFilter: 'blur(10px)', color: '#1A0E10', padding: '1rem 2rem', borderRadius: '30px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.8rem' }}
           >
-            <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#1A0E10', color: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px' }}>✓</div>
             Settings saved successfully!
           </motion.div>
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {reviewModal && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="glass" style={{ padding: '2.5rem', width: '400px', borderRadius: '24px' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
+                <h3 style={{ margin: 0, fontSize: '1.5rem' }}>Rate {reviewModal.artistName}</h3>
+                <button onClick={() => setReviewModal(null)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}><X /></button>
+              </div>
+              <form onSubmit={submitReview}>
+                <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+                  {[1,2,3,4,5].map(star => (
+                    <Star key={star} size={32} cursor="pointer" onClick={() => setReviewRating(star)} fill={star <= reviewRating ? 'var(--primary-color)' : 'none'} color={star <= reviewRating ? 'var(--primary-color)' : 'var(--text-muted)'} />
+                  ))}
+                </div>
+                <div style={{ marginBottom: '1.5rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem' }}>Write a review</label>
+                  <textarea value={reviewText} onChange={e => setReviewText(e.target.value)} required rows={4} style={{ width: '100%', padding: '0.8rem', borderRadius: '12px', background: 'transparent', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
+                </div>
+                <button type="submit" className="btn-primary" style={{ width: '100%' }}>Submit Review</button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+        {activePaymentBooking && (
+          <PaymentModal
+            amount={activePaymentBooking.totalAmount * 0.2}
+            title={`Pay Advance for ${activePaymentBooking.artistName}`}
+            onClose={() => setActivePaymentBooking(null)}
+            onSuccess={(txnId) => {
+              processPayment(activePaymentBooking.id, txnId, activePaymentBooking.totalAmount * 0.2);
+              setActivePaymentBooking(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
       <div className="container" style={{ paddingTop: '110px', paddingBottom: '4rem', display: 'flex', gap: '2.5rem' }}>
         
-        {/* SIDEBAR */}
       <aside style={{ width: '250px', flexShrink: 0 }}>
         <div className="glass" style={{ padding: '2rem 1.5rem', borderRadius: '24px', position: 'sticky', top: '110px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid var(--glass-border)' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'var(--accent-secondary)', border: '1px solid var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)', fontWeight: 'bold', fontSize: '1.2rem' }}>
-              {user.name.charAt(0).toUpperCase()}
-            </div>
+            <Avatar user={user} size={48} />
             <div>
-              <div style={{ fontWeight: 700 }}>{user.name}</div>
+              <div style={{ fontWeight: 700 }}>{user.name || 'User'}</div>
               <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Bride-to-be</div>
             </div>
           </div>
@@ -142,13 +176,11 @@ export const BrideDashboard = () => {
         </div>
       </aside>
 
-      {/* MAIN CONTENT */}
       <main style={{ flex: 1, minWidth: 0 }}>
         
-        {/* HEADER AREA */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
-            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>Hello, {user.name.split(' ')[0]}</h1>
+            <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>Hello, {user.name ? user.name.split(' ')[0] : 'User'}</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Welcome to your bridal planning hub.</p>
           </div>
           <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
@@ -174,12 +206,11 @@ export const BrideDashboard = () => {
 
         {activeTab === 'Overview' && (
           <>
-            {/* STATS OVERVIEW ROW */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
               {[
-                { title: 'Total Bookings', value: bookings.length, icon: ShoppingBag, color: 'var(--primary-color)' },
+                { title: 'Total Bookings', value: myBookings.length, icon: ShoppingBag, color: 'var(--primary-color)' },
                 { title: 'Upcoming Events', value: upcomingCount, icon: Calendar, color: 'var(--primary-color)' },
-                { title: 'Shortlisted Artists', value: shortlist.length, icon: Heart, color: 'var(--primary-color)' },
+                { title: 'Shortlisted Artists', value: myShortlist.length, icon: Heart, color: 'var(--primary-color)' },
                 { title: 'Advance Paid', value: `₹${totalSpent.toLocaleString()}`, icon: DollarSign, color: 'var(--primary-color)' }
               ].map((stat, i) => (
                 <motion.div key={i} whileHover={{ y: -5 }} className="glass" style={{ padding: '1.5rem', borderRadius: '20px', display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
@@ -194,7 +225,6 @@ export const BrideDashboard = () => {
               ))}
             </div>
 
-            {/* MY EVENTS TIMELINE */}
             <div style={{ marginBottom: '3rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-heading)' }}>My Events Timeline</h2>
@@ -226,19 +256,15 @@ export const BrideDashboard = () => {
               )}
             </div>
 
-
-
-        {/* TWO COLUMN GRID FOR BOOKINGS & PANELS */}
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2.5rem', alignItems: 'start' }}>
           
-          {/* LEFT COL: MY BOOKINGS */}
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
               <h2 style={{ fontSize: '1.5rem', fontFamily: 'var(--font-heading)' }}>My Bookings</h2>
-              <Link to="/search" style={{ color: 'var(--primary-color)', fontSize: '0.9rem', fontWeight: 600 }}>View All</Link>
+              <button onClick={() => setActiveTab('My Bookings')} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer' }}>View All</button>
             </div>
             
-            {bookings.length === 0 ? (
+            {myBookings.length === 0 ? (
               <div className="glass" style={{ padding: '4rem 2rem', textAlign: 'center', borderRadius: '24px' }}>
                 <div style={{ background: 'rgba(212, 175, 55, 0.1)', width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem auto', color: 'var(--primary-color)' }}>
                   <ShoppingBag size={40} />
@@ -249,16 +275,12 @@ export const BrideDashboard = () => {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {bookings.map((booking, idx) => {
-                  // For the mock, we don't have artistId easily populated with photo in storage by default, so we'll pass a default UI avatar if needed.
-                  const statusColor = booking.status === 'PENDING' ? 'var(--warning-color)' : booking.status === 'CONFIRMED' ? 'var(--success-color)' : 'var(--error-color)';
-                  const artistInitials = booking.artistName ? booking.artistName.charAt(0) : 'A';
-
+                {myBookings.map((booking, idx) => {
+                  const statusColor = booking.status === 'PENDING' ? 'var(--warning-color)' : booking.status === 'CONFIRMED' || booking.status === 'COMPLETED' ? 'var(--success-color)' : 'var(--error-color)';
+                  const artist = users.find(u => u.id === booking.artistId);
                   return (
                     <motion.div key={booking.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="glass" style={{ padding: '1.5rem', borderRadius: '24px', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-                      <div style={{ width: '90px', height: '90px', borderRadius: '16px', background: 'linear-gradient(135deg, #1a1a1a 0%, #333 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--primary-color)', fontSize: '2rem', fontWeight: 'bold' }}>
-                        {artistInitials}
-                      </div>
+                      <Avatar user={artist} size={90} style={{ borderRadius: '16px' }} />
                       <div style={{ flex: 1, minWidth: '200px' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '0.5rem' }}>
                           <div>
@@ -275,8 +297,9 @@ export const BrideDashboard = () => {
                           <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontWeight: 700, color: 'var(--text-main)' }}><DollarSign size={14} /> Total: ₹{booking.totalAmount?.toLocaleString()}</span>
                         </div>
                         <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-                          <button className="btn-outline" style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem', borderRadius: '20px' }}>View Details</button>
-                          <button className="btn-primary" style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem', borderRadius: '20px', background: 'var(--text-main)', color: 'var(--bg-color)', boxShadow: 'none' }}>Message Artist</button>
+                          <button onClick={() => { setActiveTab('Messages'); setChatUser(booking.artistId); }} className="btn-primary" style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem', borderRadius: '20px', background: 'var(--text-main)', color: 'var(--bg-color)', boxShadow: 'none' }}>Message Artist</button>
+                          {booking.status === 'PENDING' && <button onClick={() => updateBookingStatus(booking.id, 'CANCELLED')} className="btn-outline" style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem', borderRadius: '20px', color: 'var(--error-color)', borderColor: 'var(--error-color)' }}>Cancel</button>}
+                          {booking.status === 'COMPLETED' && <button onClick={() => setReviewModal(booking)} className="btn-outline" style={{ padding: '0.4rem 1.2rem', fontSize: '0.85rem', borderRadius: '20px', borderColor: 'var(--primary-color)', color: 'var(--primary-color)' }}>Write Review</button>}
                         </div>
                       </div>
                     </motion.div>
@@ -286,47 +309,44 @@ export const BrideDashboard = () => {
             )}
           </div>
 
-          {/* RIGHT COL: PANELS */}
           <div>
-            {/* Shortlisted Artists */}
             <div className="glass" style={{ padding: '1.5rem', borderRadius: '24px', marginBottom: '2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h3 style={{ fontSize: '1.2rem', margin: 0, fontFamily: 'var(--font-heading)' }}>Shortlist</h3>
-                <Link to="/search" style={{ color: 'var(--primary-color)', fontSize: '0.85rem', fontWeight: 600 }}>See All</Link>
+                <button onClick={() => setActiveTab('Shortlist')} style={{ background: 'none', border: 'none', color: 'var(--primary-color)', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}>See All</button>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                {shortlist.map((artist, i) => (
-                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '1rem', cursor: 'pointer' }}>
-                    <img src={getPremiumAvatar(artist.profileImage)} style={{ width: '50px', height: '50px', borderRadius: '12px', objectFit: 'cover' }} alt={artist.name} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{artist.name}</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{artist.specialty} • <Star size={10} fill="var(--primary-color)" color="var(--primary-color)" style={{display:'inline', marginBottom:'-1px'}}/> {artist.average_rating}</div>
+                {myShortlist.slice(0, 3).map((artist, i) => (
+                  <div key={artist.id} className="glass" style={{ padding: '1rem', borderRadius: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <Avatar user={artist} size={50} style={{ borderRadius: '12px' }} />
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{artist.name}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{artist.specialty} • <Star size={10} fill="var(--primary-color)" color="var(--primary-color)" style={{display:'inline', marginBottom:'-1px'}}/> {artist.average_rating}</div>
+                      </div>
                     </div>
-                    <ChevronRight size={16} color="var(--text-muted)" />
+                    <Heart size={16} fill="var(--primary-color)" color="var(--primary-color)" onClick={() => toggleShortlist(user.id, artist.id)} style={{ cursor: 'pointer' }} />
                   </div>
                 ))}
+                {myShortlist.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No artists shortlisted.</p>}
               </div>
             </div>
 
-            {/* Recent Notifications */}
             <div className="glass" style={{ padding: '1.5rem', borderRadius: '24px' }}>
               <h3 style={{ fontSize: '1.2rem', marginBottom: '1.5rem', fontFamily: 'var(--font-heading)' }}>Notifications</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-                {[
-                  { text: 'Priya Sharma confirmed your booking for Engagement.', time: '2 hours ago', icon: Bell, color: 'var(--success-color)' },
-                  { text: 'New message from Zoya Khan regarding venue details.', time: '5 hours ago', icon: MessageSquare, color: 'var(--primary-color)' },
-                  { text: 'Reminder: Advance payment due for Nail Art session.', time: '1 day ago', icon: Clock, color: 'var(--warning-color)' }
-                ].map((notif, i) => (
+                {myNotifs.slice(0, 4).map((notif, i) => (
                   <div key={i} style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
-                    <div style={{ padding: '0.6rem', background: 'var(--accent-secondary)', color: notif.color, borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
-                      <notif.icon size={16} />
+                    <div style={{ padding: '0.6rem', background: 'var(--accent-secondary)', color: notif.type === 'success' ? 'var(--success-color)' : notif.type === 'error' ? 'var(--error-color)' : 'var(--primary-color)', borderRadius: '10px', border: '1px solid var(--glass-border)' }}>
+                      <Bell size={16} />
                     </div>
                     <div>
-                      <div style={{ fontSize: '0.9rem', marginBottom: '0.2rem', lineHeight: 1.4 }}>{notif.text}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{notif.time}</div>
+                      <div style={{ fontSize: '0.9rem', marginBottom: '0.2rem', lineHeight: 1.4 }}>{notif.message}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{new Date(notif.timestamp).toLocaleDateString()}</div>
                     </div>
                   </div>
                 ))}
+                {myNotifs.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>No new notifications.</p>}
               </div>
             </div>
           </div>
@@ -335,21 +355,53 @@ export const BrideDashboard = () => {
           </>
         )}
 
-        {/* OTHER TABS */}
         {activeTab === 'My Bookings' && (
           <div className="glass" style={{ padding: '2rem', borderRadius: '24px' }}>
             <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem' }}>All Bookings</h2>
-            {bookings.length === 0 ? (
+            {myBookings.length === 0 ? (
               <p style={{ color: 'var(--text-muted)' }}>You have no bookings yet.</p>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                {bookings.map((booking, idx) => (
+                {myBookings.map((booking, idx) => (
                   <div key={idx} style={{ padding: '1.5rem', border: '1px solid var(--glass-border)', borderRadius: '16px', background: 'rgba(0,0,0,0.2)' }}>
-                    <div style={{ fontWeight: 600, fontSize: '1.2rem', marginBottom: '0.5rem' }}>{booking.artistName} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>- {booking.eventType}</span></div>
-                    <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <div style={{ fontWeight: 600, fontSize: '1.2rem', marginBottom: '0.5rem' }}>{booking.artistName} <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>- {booking.eventType}</span></div>
+                      <div style={{ fontWeight: 600 }}>
+                        {booking.status === 'PENDING' && <span style={{ color: 'var(--warning-color)' }}>Awaiting Artist Confirmation</span>}
+                        {booking.status === 'PENDING_PAYMENT' && <span style={{ color: 'var(--error-color)' }}>Payment Pending</span>}
+                        {booking.status === 'CONFIRMED' && <span style={{ color: 'var(--success-color)' }}>Confirmed</span>}
+                        {booking.status === 'COMPLETED' && <span style={{ color: 'var(--success-color)' }}>Completed</span>}
+                        {booking.status === 'REJECTED' && <span style={{ color: 'var(--error-color)' }}>Declined</span>}
+                        {booking.status === 'REFUNDED' && <span style={{ color: 'var(--error-color)' }}>Refunded</span>}
+                        {booking.status === 'CANCELLED' && <span style={{ color: 'var(--error-color)' }}>Cancelled</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1.5rem', color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '1rem' }}>
                       <span>Date: {booking.eventDate || 'TBD'}</span>
                       <span>Total: ₹{booking.totalAmount?.toLocaleString()}</span>
-                      <span style={{ color: 'var(--primary-color)' }}>Status: {booking.status}</span>
+                    </div>
+
+                    {booking.status === 'PENDING_PAYMENT' && (
+                      <div style={{ padding: '1rem', borderTop: '1px solid var(--glass-border)', display: 'flex', justifyContent: 'flex-end', alignItems: 'center' }}>
+                        <button 
+                          className="btn-primary" 
+                          onClick={() => setActivePaymentBooking(booking)}
+                          style={{ padding: '0.6rem 1.5rem', borderRadius: '30px', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                        >
+                          <DollarSign size={16} /> Pay Advance (₹{(booking.totalAmount * 0.2).toLocaleString()})
+                        </button>
+                      </div>
+                    )}
+
+                    {booking.status === 'REFUNDED' && (
+                      <div style={{ padding: '1rem', borderTop: '1px solid var(--glass-border)', background: 'rgba(255,50,50,0.1)', color: 'var(--error-color)', fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <X size={16} /> Booking declined by artist. Refund of ₹{booking.advancePaid?.toLocaleString()} processed.
+                      </div>
+                    )}
+
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                      {booking.status === 'PENDING' && <button onClick={() => updateBookingStatus(booking.id, 'CANCELLED')} className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>Cancel</button>}
+                      {booking.status === 'COMPLETED' && <button onClick={() => setReviewModal(booking)} className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem' }}>Write Review</button>}
                     </div>
                   </div>
                 ))}
@@ -361,59 +413,141 @@ export const BrideDashboard = () => {
         {activeTab === 'Shortlist' && (
           <div className="glass" style={{ padding: '2rem', borderRadius: '24px' }}>
             <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem' }}>My Shortlist</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
-              {shortlist.map((artist, idx) => (
-                <div key={idx} style={{ padding: '1rem', border: '1px solid var(--glass-border)', borderRadius: '16px', textAlign: 'center' }}>
-                  <img src={artist.profileImage} alt={artist.name} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', marginBottom: '1rem' }} />
-                  <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{artist.name}</div>
-                  <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{artist.specialty}</div>
-                  <button className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', borderRadius: '20px' }}>View Profile</button>
-                </div>
-              ))}
-            </div>
+            {myShortlist.length === 0 ? (
+              <p style={{ color: 'var(--text-muted)' }}>Your shortlist is empty. Heart artists to add them here.</p>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+                {myShortlist.map((artist, idx) => (
+                  <div key={idx} style={{ padding: '1rem', border: '1px solid var(--glass-border)', borderRadius: '16px', textAlign: 'center', position: 'relative' }}>
+                    <button onClick={() => toggleShortlist(user.id, artist.id)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer' }}><Heart fill="var(--primary-color)" color="var(--primary-color)" size={20}/></button>
+                    <Avatar user={artist} size={80} style={{ borderRadius: '50%', marginBottom: '1rem' }} />
+                    <div style={{ fontWeight: 600, fontSize: '1.1rem' }}>{artist.name}</div>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{artist.specialty}</div>
+                    <Link to={`/search?artist=${artist.id}`} className="btn-outline" style={{ padding: '0.4rem 1rem', fontSize: '0.85rem', borderRadius: '20px' }}>View Profile</Link>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
         {activeTab === 'Messages' && (
-          <div className="glass" style={{ padding: '4rem 2rem', borderRadius: '24px', textAlign: 'center' }}>
-            <MessageSquare size={48} color="var(--primary-color)" style={{ opacity: 0.5, margin: '0 auto 1.5rem auto' }} />
-            <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', marginBottom: '1rem' }}>Your Inbox</h2>
-            <p style={{ color: 'var(--text-muted)' }}>You have no new messages. Reach out to an artist to start planning!</p>
-            <Link to="/search" className="btn-primary" style={{ display: 'inline-block', marginTop: '1.5rem', borderRadius: '30px' }}>Browse Artists</Link>
+          <div className="glass" style={{ display: 'flex', height: '600px', borderRadius: '24px', overflow: 'hidden' }}>
+            <div style={{ width: '300px', borderRight: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}><h3 style={{ margin: 0 }}>Conversations</h3></div>
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {chatPartners.length === 0 ? (
+                  <p style={{ padding: '1.5rem', color: 'var(--text-muted)', textAlign: 'center' }}>No messages yet. Book an artist or start a chat from their profile.</p>
+                ) : (
+                  chatPartners.map(partnerId => {
+                    const partner = users.find(u => u.id === partnerId);
+                    if (!partner) return null;
+                    return (
+                      <div 
+                        key={partnerId} 
+                        onClick={() => { setChatUser(partnerId); markMessagesAsRead(user.id, partnerId); }}
+                        style={{ 
+                          padding: '1rem 1.5rem', borderBottom: '1px solid var(--glass-border)', cursor: 'pointer', 
+                          background: chatUser === partnerId ? 'rgba(212,175,55,0.1)' : 'transparent',
+                          display: 'flex', alignItems: 'center', gap: '1rem'
+                        }}
+                      >
+                        <Avatar user={partner} size={40} />
+                        <div style={{ flex: 1, fontWeight: 600 }}>{partner.name}</div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+            
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              {!chatUser ? (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
+                  <MessageSquare size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                  <p>Select a conversation to view messages</p>
+                </div>
+              ) : (() => {
+                  const artist = users.find(a => a.id === chatUser);
+                  return (
+                    <>
+                      <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <Avatar user={artist} size={48} />
+                        <h3 style={{ margin: 0 }}>{artist?.name}</h3>
+                      </div>
+                      <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                        {messages.filter(m => (m.senderId === user.id && m.receiverId === chatUser) || (m.senderId === chatUser && m.receiverId === user.id)).map(msg => (
+                          <div key={msg.id} style={{ alignSelf: msg.senderId === user.id ? 'flex-end' : 'flex-start', background: msg.senderId === user.id ? 'var(--primary-color)' : 'var(--accent-secondary)', color: msg.senderId === user.id ? '#111' : '#fff', padding: '0.8rem 1.2rem', borderRadius: '16px', maxWidth: '70%' }}>
+                            {msg.text}
+                          </div>
+                        ))}
+                      </div>
+                      <form onSubmit={handleSendMessage} style={{ padding: '1rem 1.5rem', borderTop: '1px solid var(--glass-border)', display: 'flex', gap: '1rem' }}>
+                        <input type="text" value={msgText} onChange={e => setMsgText(e.target.value)} placeholder="Type your message..." style={{ flex: 1, padding: '0.8rem 1rem', borderRadius: '20px', border: '1px solid var(--glass-border)', background: 'transparent', color: 'var(--text-main)' }} />
+                        <button type="submit" className="btn-primary" style={{ borderRadius: '20px', padding: '0.8rem 1.5rem' }}>Send</button>
+                      </form>
+                    </>
+                  );
+                })()}
+            </div>
           </div>
         )}
 
-        {activeTab === 'Payments' && (
-          <div className="glass" style={{ padding: '2rem', borderRadius: '24px' }}>
-            <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem' }}>Payment History</h2>
-            {bookings.length === 0 ? (
-               <p style={{ color: 'var(--text-muted)' }}>No payment history available.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid var(--glass-border)' }}>
-                    <th style={{ padding: '1rem 0', color: 'var(--text-muted)', fontWeight: 500 }}>Artist</th>
-                    <th style={{ padding: '1rem 0', color: 'var(--text-muted)', fontWeight: 500 }}>Event</th>
-                    <th style={{ padding: '1rem 0', color: 'var(--text-muted)', fontWeight: 500 }}>Total</th>
-                    <th style={{ padding: '1rem 0', color: 'var(--text-muted)', fontWeight: 500 }}>Advance Paid</th>
-                    <th style={{ padding: '1rem 0', color: 'var(--text-muted)', fontWeight: 500 }}>Pending</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {bookings.map((b, i) => (
-                    <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '1rem 0', fontWeight: 600 }}>{b.artistName}</td>
-                      <td style={{ padding: '1rem 0', color: 'var(--text-muted)' }}>{b.eventType}</td>
-                      <td style={{ padding: '1rem 0' }}>₹{b.totalAmount?.toLocaleString()}</td>
-                      <td style={{ padding: '1rem 0', color: 'var(--success-color)' }}>₹{b.advancePaid?.toLocaleString()}</td>
-                      <td style={{ padding: '1rem 0', color: 'var(--warning-color)' }}>₹{(b.totalAmount - (b.advancePaid || 0)).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
-        )}
+        {activeTab === 'Payments' && (() => {
+          const payments = myBookings.filter(b => b.advancePaid > 0);
+          return (
+            <div className="glass" style={{ padding: '2rem', borderRadius: '24px' }}>
+              <h3 style={{ fontSize: '1.5rem', marginBottom: '1.5rem', color: 'var(--primary-color)' }}>Payment History</h3>
+              {payments.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' }}>
+                  <DollarSign size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                  <p>No payments yet. Book an artist to get started.</p>
+                </div>
+              ) : (
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--glass-border)', color: 'var(--text-muted)' }}>
+                        <th style={{ padding: '1rem' }}>Date</th>
+                        <th style={{ padding: '1rem' }}>Txn ID</th>
+                        <th style={{ padding: '1rem' }}>Artist</th>
+                        <th style={{ padding: '1rem' }}>Event</th>
+                        <th style={{ padding: '1rem' }}>Total</th>
+                        <th style={{ padding: '1rem' }}>Advance Paid</th>
+                        <th style={{ padding: '1rem' }}>Pending</th>
+                        <th style={{ padding: '1rem' }}>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payments.map(payment => (
+                        <tr key={payment.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                          <td style={{ padding: '1rem' }}>{payment.paymentDate ? new Date(payment.paymentDate).toLocaleDateString() : 'N/A'}</td>
+                          <td style={{ padding: '1rem', fontFamily: 'monospace', color: 'var(--text-muted)' }}>{payment.transactionId || 'N/A'}</td>
+                          <td style={{ padding: '1rem', fontWeight: 600 }}>{payment.artistName}</td>
+                          <td style={{ padding: '1rem' }}>{payment.eventType}</td>
+                          <td style={{ padding: '1rem' }}>₹{payment.totalAmount?.toLocaleString()}</td>
+                          <td style={{ padding: '1rem', color: payment.status === 'REFUNDED' ? 'var(--text-muted)' : 'var(--primary-color)' }}>
+                            <span style={{ textDecoration: payment.status === 'REFUNDED' ? 'line-through' : 'none' }}>
+                              ₹{payment.advancePaid?.toLocaleString()}
+                            </span>
+                          </td>
+                          <td style={{ padding: '1rem' }}>₹{(payment.totalAmount - payment.advancePaid).toLocaleString()}</td>
+                          <td style={{ padding: '1rem' }}>
+                            {payment.status === 'REFUNDED' ? (
+                              <span style={{ display: 'inline-block', padding: '0.3rem 0.8rem', background: 'rgba(255,50,50,0.1)', color: 'var(--error-color)', borderRadius: '20px', fontSize: '0.85rem' }}>Refunded</span>
+                            ) : (
+                              <span style={{ display: 'inline-block', padding: '0.3rem 0.8rem', background: 'rgba(74, 222, 128, 0.1)', color: '#4ade80', borderRadius: '20px', fontSize: '0.85rem' }}>Advance Paid</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          );
+        })()}
 
         {activeTab === 'Settings' && (
           <div className="glass" style={{ padding: '2rem', borderRadius: '24px', maxWidth: '600px' }}>

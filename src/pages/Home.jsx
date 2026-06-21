@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Avatar } from '../components/Avatar';
+import { Link, useNavigate } from 'react-router-dom';
 import { Search, Heart, Calendar, Sparkles, ChevronDown, Star } from 'lucide-react';
-import { getFromStorage } from '../storage';
+import { useApp } from '../context/AppContext';
 
 const CATEGORIES = [
   { id: 1, title: 'Bridal HD Makeup & Saree', image: '/bride.jpg' },
@@ -15,17 +16,16 @@ const CATEGORIES = [
 
 export const Home = () => {
   const [topArtists, setTopArtists] = useState([]);
+  const { currentUser: user, users } = useApp();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const allUsers = getFromStorage('users') || [];
-    setTopArtists(allUsers.filter(u => u.role === 'ARTIST').slice(0, 4));
-  }, []);
+    setTopArtists(users.filter(u => u.role === 'ARTIST').slice(0, 4));
+  }, [users]);
 
-  const getPremiumAvatar = (url) => {
-    if (url && url.includes('ui-avatars.com')) {
-      return url.replace(/background=[a-zA-Z0-9]+/, 'background=1a1a1a').replace(/color=[a-zA-Z0-9]+/, 'color=d4af37');
-    }
-    return url;
+  const handleSearchNavigation = () => {
+    if (!user) navigate('/login');
+    else navigate('/search');
   };
 
   return (
@@ -118,24 +118,33 @@ export const Home = () => {
         </div>
       </div>
 
-      {/* 4. TOP RATED ARTISTS */}
+        {/* 4. TOP RATED ARTISTS */}
       <div className="container" style={{ marginBottom: '8rem' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Top Rated Artists</h2>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>The most requested professionals in Delhi NCR.</p>
           </div>
-          <Link to="/search" className="btn-outline" style={{ borderRadius: '30px', padding: '0.75rem 2rem' }}>View All Artists</Link>
+          <button onClick={handleSearchNavigation} className="btn-outline" style={{ borderRadius: '30px', padding: '0.75rem 2rem', border: '1px solid var(--primary-color)', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontSize: '1rem', fontWeight: 600 }}>View All Artists</button>
         </div>
         <div className="artist-grid">
           {topArtists.map(artist => (
-            <motion.div key={artist.id} whileHover={{ y: -5 }} transition={{ duration: 0.3 }} className="glass" style={{ padding: '1.25rem', borderRadius: '24px' }}>
-              <img src={getPremiumAvatar(artist.profileImage)} alt={artist.name} style={{ width: '100%', height: '200px', objectFit: 'cover', borderRadius: '16px', marginBottom: '1.2rem' }} />
+            <motion.div 
+              key={artist.id} 
+              whileHover={{ y: -10 }} 
+              transition={{ duration: 0.3 }} 
+              className="glass" 
+              style={{ padding: '1.5rem', borderRadius: '24px', textAlign: 'center', cursor: 'pointer' }}
+              onClick={handleSearchNavigation}
+            >
+              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.2rem' }}>
+                <Avatar user={artist} size={200} style={{ borderRadius: '16px' }} />
+              </div>
               <div style={{ display: 'inline-block', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary-color)', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.8rem' }}>
                 {artist.specialty}
               </div>
               <h3 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0' }}>{artist.name}</h3>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
                 <Star size={14} fill="var(--primary-color)" color="var(--primary-color)" />
                 <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{artist.average_rating}</span>
                 <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginLeft: '0.2rem' }}>({artist.reviews_count} reviews)</span>
@@ -207,9 +216,9 @@ export const Home = () => {
           <div style={{ position: 'relative', zIndex: 2 }}>
             <h2 style={{ fontSize: '3.5rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Ready to Book Your Perfect Look?</h2>
             <p style={{ fontSize: '1.25rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem auto', opacity: 0.95 }}>Join thousands of brides who found their dream artist on Make U Ready.</p>
-            <Link to="/search" style={{ background: 'var(--primary-color)', color: 'var(--bg-color)', fontSize: '1.15rem', padding: '1.2rem 3rem', borderRadius: '30px', fontWeight: 700, display: 'inline-block', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+            <button onClick={handleSearchNavigation} style={{ background: 'var(--primary-color)', color: 'var(--bg-color)', fontSize: '1.15rem', padding: '1.2rem 3rem', borderRadius: '30px', fontWeight: 700, display: 'inline-block', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', border: 'none', cursor: 'pointer' }}>
               Find Your Artist Now
-            </Link>
+            </button>
           </div>
         </div>
       </div>
