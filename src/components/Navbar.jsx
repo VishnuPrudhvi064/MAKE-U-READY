@@ -72,14 +72,12 @@ export const Navbar = () => {
 
         {/* Center: Links */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
-          {user && user.role === 'BRIDE' && (
-            <Link 
-              to="/search" 
-              className={`nav-link ${location.pathname === '/search' ? 'active' : ''}`}
-            >
-              Find Artists
-            </Link>
-          )}
+          <Link 
+            to="/search" 
+            className={`nav-link ${location.pathname === '/search' ? 'active' : ''}`}
+          >
+            Find Artists
+          </Link>
         </div>
 
         {/* Right: User Actions */}

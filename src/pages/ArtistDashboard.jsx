@@ -39,8 +39,14 @@ export const ArtistDashboard = () => {
   });
 
   // Chat State
-  const chatUser = searchParams.get('chat') || null;
-  const setChatUser = (userId) => setSearchParams(prev => { if(userId) prev.set('chat', userId); else prev.delete('chat'); return prev; });
+  const [chatUser, setChatUser] = useState(() => searchParams.get('chat') || null);
+  
+  useEffect(() => {
+    const chatParam = searchParams.get('chat');
+    if (chatParam) {
+      setChatUser(chatParam);
+    }
+  }, [searchParams]);
   const [msgText, setMsgText] = useState('');
 
   if (!user || user.role !== 'ARTIST') {
@@ -134,7 +140,8 @@ export const ArtistDashboard = () => {
     setMsgText('');
   };
 
-  const chatPartners = [...new Set(messages.filter(m => m.senderId === user.id || m.receiverId === user.id).map(m => m.senderId === user.id ? m.receiverId : m.senderId))];
+  const chatPartnersRaw = [...new Set(messages.filter(m => m.senderId === user.id || m.receiverId === user.id).map(m => m.senderId === user.id ? m.receiverId : m.senderId))];
+  const chatPartners = chatUser && !chatPartnersRaw.includes(chatUser) ? [chatUser, ...chatPartnersRaw] : chatPartnersRaw;
 
   return (
     <>

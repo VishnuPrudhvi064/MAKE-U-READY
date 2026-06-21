@@ -18,8 +18,15 @@ export const BrideDashboard = () => {
   const [newWeddingDate, setNewWeddingDate] = useState('');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [reviewModal, setReviewModal] = useState(null); // { booking }
-  const [chatUser, setChatUser] = useState(null);
+  const [chatUser, setChatUser] = useState(() => searchParams.get('chat') || null);
   const [msgText, setMsgText] = useState('');
+
+  useEffect(() => {
+    const chatParam = searchParams.get('chat');
+    if (chatParam) {
+      setChatUser(chatParam);
+    }
+  }, [searchParams]);
   const [activePaymentBooking, setActivePaymentBooking] = useState(null);
 
   // Form states for reviews
@@ -63,7 +70,8 @@ export const BrideDashboard = () => {
     setMsgText('');
   };
 
-  const chatPartners = [...new Set(messages.filter(m => m.senderId === user.id || m.receiverId === user.id).map(m => m.senderId === user.id ? m.receiverId : m.senderId))];
+  const chatPartnersRaw = [...new Set(messages.filter(m => m.senderId === user.id || m.receiverId === user.id).map(m => m.senderId === user.id ? m.receiverId : m.senderId))];
+  const chatPartners = chatUser && !chatPartnersRaw.includes(chatUser) ? [chatUser, ...chatPartnersRaw] : chatPartnersRaw;
 
   const generateEventsTimeline = () => {
     if (!user || !user.weddingDate) return [];
