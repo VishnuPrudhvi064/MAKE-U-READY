@@ -1,28 +1,31 @@
-# AI Tools & Workflow Used in MAKEUREADY
+## 🧪 How to Demo / Use the Website
 
-This project was built using an **AI-Assisted Agentic Workflow**, where AI tools handled code execution while every architectural, design, and product decision was directed and verified by the developer.
+> **Note:** This build uses browser **localStorage** to simulate a real-time database for demo purposes — no external server or backend is required. Because of this, all actions must be performed within the **same browser** for data to sync correctly between the Bride and Artist views. Using two different browsers (or incognito mode) for opposite roles will not sync data, since each browser maintains its own isolated local storage.
 
-## AI Tools Used
+### Step-by-Step Demo Flow
 
-- **Google Gemini (Antigravity IDE Assistant):** Used as the primary pair-programming agent for generating boilerplate, implementing logic, and executing UI/UX changes based on detailed, structured prompts.
+1. **Create an Artist account first**
+   Sign up as an Artist, complete the profile (photo, bio, specialties, location), add 4–5 service packages, and upload portfolio images. This populates the artist's public-facing data.
 
-## Development Workflow
+2. **Log out, then sign up / log in as a Bride — in the same browser**
+   Set your wedding date, then go to **Find Artists** and search for the artist you just created. Their profile should now appear with all the details you entered.
 
-1. **Ideation & Architecture**
-   The core product concept, user roles (Bride/Artist/Admin), feature set, and overall platform flow were defined upfront. AI was then used to scaffold the project structure and tech stack (React, Vite, Framer Motion) based on these requirements.
+3. **Complete a full booking flow**
+   Shortlist the artist → select a package → book an event date → go through the simulated payment (UPI/Card mock flow) → confirm advance payment.
 
-2. **Agentic Code Generation**
-   The AI agent wrote functional React components, configured routing, and implemented styling based on specific, detailed prompts — covering exact layout requirements, component behavior, and design tokens (color system, typography, spacing) defined by the developer.
+4. **Switch back to the Artist account, same browser**
+   Log out of the Bride account, log back into the Artist account. The booking request should now appear under **Booking Requests** with Accept/Reject options.
 
-3. **Directed Design Iteration**
-   Visual direction (the maroon-and-gold luxury bridal theme, typography pairing, card layouts, responsive behavior) was specified explicitly by the developer through detailed design briefs, rather than left to AI's default choices. Each iteration was reviewed against screenshots of the actual rendered output, and follow-up prompts were written to correct specific issues identified during review.
+5. **Accept the booking as the Artist**
+   This updates the booking status to **Confirmed** — switch back to the Bride account to confirm it reflects there too.
 
-4. **Active QA & Bug Identification**
-   Throughout development, the developer manually tested every page and flow — across desktop and mobile breakpoints — identifying specific functional and visual bugs (e.g. broken navigation links, non-functional messaging, responsive layout failures, data not persisting correctly, incorrect routing on dynamic pages). Each bug was diagnosed and described precisely before being handed back to the AI agent for a targeted fix, and re-verified after each fix to confirm resolution.
+6. **Test messaging both ways**
+   From the Bride side, message the artist. Switch to the Artist account and reply. Switch back to confirm the conversation synced correctly.
 
-5. **Iterative Debugging**
-   When fixes were incomplete or introduced new issues, the developer re-tested, identified the gap, and issued more specific follow-up instructions — repeating this cycle until each feature was verified working end-to-end (e.g. the booking lifecycle, payment simulation flow, and cross-device responsiveness all went through multiple rounds of testing and correction).
+7. **Mark as Completed + Leave a Review**
+   As the Artist, mark the booking as completed. As the Bride, submit a star rating and review — confirm it appears on the artist's public profile.
 
-## Summary for Judges
-
-AI served as an execution engine, not a decision-maker. Every feature, design choice, bug fix, and UX flow in MAKE-U-READY was specified, tested, and verified by the developer — the AI agent's role was to implement those decisions in code quickly, freeing up time to focus on product thinking, design quality, and thorough QA across the entire platform.
+### ⚠️ Important Notes
+- Always test/demo within **one single browser**, switching accounts via logout/login.
+- Clearing browser site data (cookies/local storage) will reset all accounts and bookings, since there is no external database.
+- For details on the AI-assisted development workflow used to build this project, see [`AI_USAGE.md`](./AI_USAGE.md).
