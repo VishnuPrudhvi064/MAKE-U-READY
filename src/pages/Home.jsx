@@ -244,13 +244,16 @@ export const Home = () => {
               <h4 style={{ color: 'var(--text-main)', marginBottom: '1.5rem', fontSize: '1.1rem', letterSpacing: '0.5px' }}>Contact Us</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                 <li>support@makeuready.com</li>
-                <li>+91 98765 43210</li>
+                <li>+91 9441476663</li>
                 <li>New Delhi, India</li>
               </ul>
             </div>
           </div>
         </div>
         <div className="container" style={{ borderTop: '1px solid var(--glass-border)', paddingTop: '2rem', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
+          <div style={{ marginBottom: '1rem', fontStyle: 'italic', color: 'var(--primary-color)' }}>
+            Note: This application is a demo developed for hackathon purposes.
+          </div>
           &copy; {new Date().getFullYear()} Make U Ready. All rights reserved.
         </div>
       </footer>
