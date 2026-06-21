@@ -20,7 +20,7 @@ export const Home = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    setTopArtists(users.filter(u => u.role === 'ARTIST').slice(0, 4));
+    setTopArtists([...users.filter(u => u.role === 'ARTIST')].sort((a, b) => b.reviews_count - a.reviews_count).slice(0, 4));
   }, [users]);
 
   const handleSearchNavigation = () => {
@@ -43,7 +43,7 @@ export const Home = () => {
         marginBottom: '120px'
       }}>
         <motion.div className="container animate-fade-up" style={{ textAlign: 'center', width: '100%' }}>
-          <h1 style={{ fontSize: '4.5rem', marginBottom: '1.5rem', lineHeight: 1.1 }}>
+          <h1 className="hero-heading" style={{ fontSize: '4.5rem', marginBottom: '1.5rem', lineHeight: 1.1 }}>
             Your Perfect Look,<br/> <span className="text-gradient">Just a Click Away</span>
           </h1>
           <p style={{ fontSize: '1.25rem', color: 'var(--text-muted)', maxWidth: '600px', margin: '0 auto' }}>
@@ -119,35 +119,35 @@ export const Home = () => {
       </div>
 
         {/* 4. TOP RATED ARTISTS */}
-      <div className="container" style={{ marginBottom: '8rem' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+      <div className="container mobile-section-gap" style={{ marginBottom: '8rem' }}>
+        <div className="mobile-header-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 'clamp(1.5rem, 5vw, 3rem)', flexWrap: 'wrap', gap: '1rem' }}>
           <div>
-            <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Top Rated Artists</h2>
-            <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>The most requested professionals in Delhi NCR.</p>
+            <h2 style={{ fontSize: 'clamp(2rem, 5vw, 2.5rem)', marginBottom: '0.5rem' }}>Top Rated Artists</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '1rem' }}>The most requested professionals in Delhi NCR.</p>
           </div>
-          <button onClick={handleSearchNavigation} className="btn-outline" style={{ borderRadius: '30px', padding: '0.75rem 2rem', border: '1px solid var(--primary-color)', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontSize: '1rem', fontWeight: 600 }}>View All Artists</button>
+          <button onClick={handleSearchNavigation} className="btn-outline mobile-btn-small" style={{ borderRadius: '30px', padding: '0.75rem 2rem', border: '1px solid var(--primary-color)', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer', fontSize: '1rem', fontWeight: 600 }}>View All Artists</button>
         </div>
-        <div className="artist-grid">
+        <div className="artist-grid artist-grid-2col">
           {topArtists.map(artist => (
             <motion.div 
               key={artist.id} 
               whileHover={{ y: -10 }} 
               transition={{ duration: 0.3 }} 
               className="glass" 
-              style={{ padding: '1.5rem', borderRadius: '24px', textAlign: 'center', cursor: 'pointer' }}
+              style={{ padding: '16px', borderRadius: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'center', width: '100%', cursor: 'pointer', minWidth: 0, wordBreak: 'break-word', overflowWrap: 'anywhere' }}
               onClick={handleSearchNavigation}
             >
-              <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.2rem' }}>
-                <Avatar user={artist} size={200} style={{ borderRadius: '16px' }} />
+              <div className="responsive-avatar" style={{ display: 'flex', justifyContent: 'center', marginBottom: '10px', width: '100%' }}>
+                <Avatar user={artist} size={150} style={{ borderRadius: '12px', margin: '0 auto' }} />
               </div>
-              <div style={{ display: 'inline-block', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary-color)', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 600, marginBottom: '0.8rem' }}>
+              <div style={{ display: 'inline-block', background: 'rgba(212, 175, 55, 0.1)', color: 'var(--primary-color)', padding: '4px 8px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 600, marginBottom: '8px' }}>
                 {artist.specialty}
               </div>
-              <h3 style={{ fontSize: '1.3rem', margin: '0 0 0.5rem 0' }}>{artist.name}</h3>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem' }}>
-                <Star size={14} fill="var(--primary-color)" color="var(--primary-color)" />
-                <span style={{ fontWeight: 700, fontSize: '0.95rem' }}>{artist.average_rating}</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginLeft: '0.2rem' }}>({artist.reviews_count} reviews)</span>
+              <h3 style={{ fontSize: '1.1rem', margin: '0 0 8px 0', wordBreak: 'break-word', overflowWrap: 'anywhere', textAlign: 'center', width: '100%' }}>{artist.name}</h3>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                <Star size={12} fill="var(--primary-color)" color="var(--primary-color)" />
+                <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{artist.average_rating}</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>({artist.reviews_count})</span>
               </div>
             </motion.div>
           ))}
@@ -160,7 +160,7 @@ export const Home = () => {
           <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
             <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>Why Choose Make U Ready</h2>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem', textAlign: 'center' }}>
+          <div className="how-it-works-grid" style={{ gap: '3rem', textAlign: 'center' }}>
             {[
               { title: '500+', desc: 'Verified Artists' },
               { title: '10k+', desc: 'Happy Brides' },
@@ -181,7 +181,7 @@ export const Home = () => {
         <div style={{ textAlign: 'center', marginBottom: '4rem' }}>
           <h2 style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>What Brides Say</h2>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+        <div className="artist-grid" style={{ gap: '2rem' }}>
           {[
             { name: 'Aisha Gupta', text: 'Absolutely seamless experience. Found my dream makeup artist in minutes and the escrow payment gave me total peace of mind.' },
             { name: 'Simran Kaur', text: 'The artists here are top-tier. My Mehendi artist was punctual, professional, and her work was stunning.' },
@@ -214,7 +214,7 @@ export const Home = () => {
       <div className="container" style={{ marginBottom: '4rem' }}>
         <div style={{ background: 'var(--accent-secondary)', borderRadius: '40px', padding: '5rem 2rem', textAlign: 'center', color: 'var(--text-main)', boxShadow: '0 20px 40px rgba(201, 162, 39, 0.15)', position: 'relative', overflow: 'hidden', border: '1px solid var(--primary-color)' }}>
           <div style={{ position: 'relative', zIndex: 2 }}>
-            <h2 style={{ fontSize: '3.5rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Ready to Book Your Perfect Look?</h2>
+            <h2 className="hero-heading" style={{ fontSize: '3.5rem', marginBottom: '1.5rem', color: 'var(--text-main)' }}>Ready to Book Your Perfect Look?</h2>
             <p style={{ fontSize: '1.25rem', marginBottom: '3rem', maxWidth: '600px', margin: '0 auto 3rem auto', opacity: 0.95 }}>Join thousands of brides who found their dream artist on Make U Ready.</p>
             <button onClick={handleSearchNavigation} style={{ background: 'var(--primary-color)', color: 'var(--bg-color)', fontSize: '1.15rem', padding: '1.2rem 3rem', borderRadius: '30px', fontWeight: 700, display: 'inline-block', boxShadow: '0 10px 25px rgba(0,0,0,0.2)', border: 'none', cursor: 'pointer' }}>
               Find Your Artist Now
@@ -225,14 +225,14 @@ export const Home = () => {
 
       {/* 8. FOOTER */}
       <footer style={{ background: 'var(--card-bg)', color: 'var(--text-muted)', padding: '5rem 2rem 2rem 2rem', marginTop: 'auto', borderTop: '1px solid var(--glass-border)' }}>
-        <div className="container" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '3rem', marginBottom: '4rem' }}>
+        <div className="container mobile-stack" style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '3rem', marginBottom: '4rem' }}>
           <div style={{ maxWidth: '350px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary-color)', fontWeight: 800, fontSize: '1.5rem', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem', letterSpacing: '1px' }}>
               <Sparkles size={24} /> MAKE U READY
             </div>
             <p style={{ lineHeight: 1.8, fontSize: '0.95rem' }}>The exclusive bridal beauty platform in Delhi NCR. Discover elite artists and premium salon services tailored for your big day.</p>
           </div>
-          <div style={{ display: 'flex', gap: '5rem', flexWrap: 'wrap' }}>
+          <div className="mobile-stack" style={{ display: 'flex', gap: '5rem', flexWrap: 'wrap' }}>
             <div>
               <h4 style={{ color: 'var(--text-main)', marginBottom: '1.5rem', fontSize: '1.1rem', letterSpacing: '0.5px' }}>Quick Links</h4>
               <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>

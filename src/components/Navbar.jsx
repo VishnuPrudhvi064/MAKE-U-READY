@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Sparkles, LogOut, Bell } from 'lucide-react';
+import { Sparkles, LogOut, Bell, Menu, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { Avatar } from './Avatar';
 
@@ -10,6 +10,7 @@ export const Navbar = () => {
   const { currentUser: user, logout, notifications, markNotificationsAsRead } = useApp();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const notifRef = useRef(null);
 
   const handleLogoutClick = () => {
@@ -42,9 +43,22 @@ export const Navbar = () => {
     }
   };
 
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => { document.body.style.overflow = 'unset'; };
+  }, [isMobileMenuOpen]);
+
   return (
     <>
-    <nav className="navbar glass" style={{ 
+    <nav className="navbar glass nav-glass-mobile" style={{ 
       margin: '1rem auto', 
       maxWidth: '1200px', 
       left: '1rem', 
@@ -61,17 +75,17 @@ export const Navbar = () => {
         
         {/* Left: Logo */}
         <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-start' }}>
-          <Link to="/" className="text-gradient" style={{ 
+          <Link to="/" className="text-gradient mobile-nav-logo" style={{ 
             display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none',
             fontFamily: 'var(--font-heading)', fontWeight: 800, fontSize: '1.8rem', letterSpacing: '2px'
           }}>
-            <Sparkles size={28} color="var(--primary-color)" />
+            <Sparkles size={28} className="mobile-nav-icon" color="var(--primary-color)" />
             MAKE U READY
           </Link>
         </div>
 
         {/* Center: Links */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+        <div className="mobile-hide" style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
           <Link 
             to="/search" 
             className={`nav-link ${location.pathname === '/search' ? 'active' : ''}`}
@@ -80,8 +94,8 @@ export const Navbar = () => {
           </Link>
         </div>
 
-        {/* Right: User Actions */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem' }}>
+        {/* Right: User Actions (Desktop) */}
+        <div className="mobile-hide" style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', alignItems: 'center', gap: '1.5rem' }}>
           {!user ? (
             <Link to="/login" className="btn-primary" style={{ padding: '0.8rem 1.8rem', fontWeight: 600, borderRadius: '30px' }}>Login / Register</Link>
           ) : (
@@ -173,8 +187,65 @@ export const Navbar = () => {
           )}
         </div>
 
+        {/* Right: Mobile Menu Toggle */}
+        <div className="mobile-only" style={{ display: 'none' }}>
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', cursor: 'pointer', padding: '0.5rem' }}
+          >
+            {isMobileMenuOpen ? <X size={28} /> : <Menu size={28} className="mobile-nav-icon" />}
+          </button>
+        </div>
+
       </div>
     </nav>
+
+    {/* Mobile Nav Menu Dropdown (Moved outside nav to fix stacking context issues) */}
+    {isMobileMenuOpen && (
+      <div className="mobile-nav-menu mobile-flex" style={{ position: 'fixed', top: '90px', left: '1rem', right: '1rem', bottom: '1rem', background: 'var(--bg-color)', zIndex: 99999, borderRadius: '24px', border: '1px solid var(--glass-border)', boxShadow: '0 20px 40px rgba(0,0,0,0.8)', padding: '2rem', display: 'flex', flexDirection: 'column', gap: '1.5rem', overflowY: 'auto' }}>
+        <Link 
+          to="/search" 
+          className={`nav-link ${location.pathname === '/search' ? 'active' : ''}`}
+          onClick={closeMobileMenu}
+          style={{ fontSize: '1.2rem', padding: '1rem 0', borderBottom: '1px solid rgba(255,255,255,0.05)', width: '100%' }}
+        >
+          Find Artists
+        </Link>
+
+        {!user ? (
+          <Link to="/login" className="btn-primary" onClick={closeMobileMenu} style={{ padding: '1rem', fontWeight: 600, borderRadius: '30px', textAlign: 'center', width: '100%', marginTop: '0.5rem' }}>Login / Register</Link>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', paddingBottom: '1rem', borderBottom: '1px solid var(--glass-border)' }}>
+              <Avatar user={user} size={48} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: '1.1rem', color: 'var(--text-main)' }}>{user.name}</div>
+                <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{user.role}</div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <Link to={user.role === 'ARTIST' ? '/artist' : '/bride'} className="btn-outline" onClick={closeMobileMenu} style={{ 
+                padding: '0.8rem', fontSize: '1rem', fontWeight: 600, textAlign: 'center', borderRadius: '30px'
+              }}>
+                Dashboard
+              </Link>
+
+              <button 
+                onClick={() => { closeMobileMenu(); handleLogoutClick(); }} 
+                style={{ 
+                  padding: '0.8rem', fontSize: '1rem', fontWeight: 600, textAlign: 'center', borderRadius: '30px',
+                  color: 'var(--error-color)', background: 'rgba(166, 69, 58, 0.1)', border: '1px solid var(--error-color)',
+                  cursor: 'pointer'
+                }} 
+              >
+                Log Out
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    )}
 
     {/* CUSTOM LOGOUT MODAL */}
     {showLogoutConfirm && (

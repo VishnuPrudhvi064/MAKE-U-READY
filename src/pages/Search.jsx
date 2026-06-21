@@ -80,7 +80,7 @@ const BookingDetailsModal = ({ pkg, artist, onClose, onSuccess }) => {
 
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, backdropFilter: 'blur(5px)' }}>
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass" style={{ width: '450px', padding: '2.5rem', background: 'var(--card-bg)', borderRadius: '24px' }}>
+      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="glass" style={{ width: '90%', maxWidth: '450px', padding: '2.5rem', background: 'var(--card-bg)', borderRadius: '24px' }}>
         <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', textAlign: 'center' }}>Event Details</h3>
         <p style={{ color: 'var(--text-muted)', textAlign: 'center', marginBottom: '2rem' }}>Please provide details for {artist.name}</p>
         
@@ -104,7 +104,7 @@ const BookingDetailsModal = ({ pkg, artist, onClose, onSuccess }) => {
             <input type="text" placeholder="e.g. Taj Palace, Chanakyapuri" required value={eventPlace} onChange={e => setEventPlace(e.target.value)} style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'transparent', color: 'var(--text-main)' }} />
           </div>
           <div style={{ display: 'flex', gap: '1rem' }}>
-            <button type="button" onClick={onClose} className="btn-outline" style={{ flex: 1, padding: '0.8rem', borderRadius: '30px' }}>Cancel</button>
+              <button onClick={onClose} className="btn-outline mobile-full-width" style={{ padding: '0.8rem 2rem', borderRadius: '30px' }}>Cancel</button>
             <button type="submit" className="btn-primary" style={{ flex: 1, padding: '0.8rem', borderRadius: '30px' }}>Continue</button>
           </div>
         </form>
@@ -119,6 +119,7 @@ export const Search = () => {
   
   const [selectedArtist, setSelectedArtist] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [bookingModal, setBookingModal] = useState(null);
   const [activePaymentBooking, setActivePaymentBooking] = useState(null); // { booking, pkg }
   const navigate = useNavigate();
@@ -254,17 +255,53 @@ export const Search = () => {
               />
             </div>
 
-            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            {/* Mobile Filter Toggle */}
+            <div className="mobile-only" style={{ marginBottom: '1.5rem' }}>
+              <button onClick={() => setShowMobileFilters(true)} className="btn-outline mobile-full-width" style={{ borderRadius: '30px', padding: '1rem' }}>
+                Filters & Sort
+              </button>
+            </div>
+
+            {/* Mobile Filter Modal */}
+            {showMobileFilters && (
+              <div className="mobile-only" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'flex-end' }}>
+                <div className="glass" style={{ width: '100%', padding: '2rem', borderTopLeftRadius: '24px', borderTopRightRadius: '24px', background: 'var(--card-bg)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                    <h3 style={{ margin: 0 }}>Filters & Sort</h3>
+                    <button onClick={() => setShowMobileFilters(false)} style={{ background: 'transparent', border: 'none', color: 'var(--text-main)', fontSize: '1.5rem', cursor: 'pointer' }}>&times;</button>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <select value={filterLocation} onChange={e => { setFilterLocation(e.target.value); setPage(1); }} className="glass" style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                      <option value="All">All Locations</option>
+                      {locations.filter(l => l !== 'All').map(l => <option key={l} value={l}>{l}</option>)}
+                    </select>
+                    <select value={filterSpecialty} onChange={e => { setFilterSpecialty(e.target.value); setPage(1); }} className="glass" style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                      <option value="All">All Specialties</option>
+                      {specialties.filter(s => s !== 'All').map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
+                    <select value={sortBy} onChange={e => setSortBy(e.target.value)} className="glass" style={{ width: '100%', padding: '1rem', borderRadius: '12px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)' }}>
+                      <option value="Popularity">Sort by Popularity</option>
+                      <option value="Rating">Sort by Rating</option>
+                      <option value="Experience">Sort by Experience</option>
+                    </select>
+                  </div>
+                  <button className="btn-primary" onClick={() => setShowMobileFilters(false)} style={{ width: '100%', marginTop: '1.5rem', padding: '1rem', borderRadius: '30px' }}>Apply Filters</button>
+                </div>
+              </div>
+            )}
+
+            {/* Desktop Filter Bar */}
+            <div className="mobile-hide" style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
                 <select 
                   value={filterLocation} onChange={e => { setFilterLocation(e.target.value); setPage(1); }}
-                  className="glass" style={{ padding: '0.6rem 1.2rem', borderRadius: '20px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)', cursor: 'pointer', outline: 'none', fontWeight: 500 }}>
+                  className="glass" style={{ maxWidth: '100%', padding: '0.6rem 1.2rem', borderRadius: '20px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)', cursor: 'pointer', outline: 'none', fontWeight: 500 }}>
                   <option value="All">All Locations</option>
                   {locations.filter(l => l !== 'All').map(l => <option key={l} value={l}>{l}</option>)}
                 </select>
                 <select 
                   value={filterSpecialty} onChange={e => { setFilterSpecialty(e.target.value); setPage(1); }}
-                  className="glass" style={{ padding: '0.6rem 1.2rem', borderRadius: '20px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)', cursor: 'pointer', outline: 'none', fontWeight: 500 }}>
+                  className="glass" style={{ maxWidth: '100%', padding: '0.6rem 1.2rem', borderRadius: '20px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)', cursor: 'pointer', outline: 'none', fontWeight: 500 }}>
                   <option value="All">All Specialties</option>
                   {specialties.filter(s => s !== 'All').map(s => <option key={s} value={s}>{s}</option>)}
                 </select>
@@ -275,7 +312,7 @@ export const Search = () => {
                 </span>
                 <select 
                   value={sortBy} onChange={e => setSortBy(e.target.value)}
-                  className="glass" style={{ padding: '0.6rem 1.2rem', borderRadius: '20px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)', cursor: 'pointer', outline: 'none', fontWeight: 500 }}>
+                  className="glass" style={{ maxWidth: '100%', padding: '0.6rem 1.2rem', borderRadius: '20px', border: '1px solid var(--glass-border)', color: 'var(--text-main)', background: 'var(--card-bg)', cursor: 'pointer', outline: 'none', fontWeight: 500 }}>
                   <option value="Popularity">Sort by Popularity</option>
                   <option value="Rating">Sort by Rating</option>
                   <option value="Experience">Sort by Experience</option>
@@ -284,23 +321,17 @@ export const Search = () => {
             </div>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '2rem' }}>
+          <div className="artist-grid">
             {paginatedArtists.map((artist, idx) => (
               <motion.div 
                 key={artist.id} 
                 className="glass" 
-                initial="rest"
-                animate="rest"
-                whileHover="hover"
-                variants={{
-                  rest: { y: 0, scale: 1, boxShadow: 'var(--glass-shadow)', borderColor: 'var(--glass-border)' },
-                  hover: { y: -5, scale: 1.02, boxShadow: '0 15px 35px rgba(212, 175, 55, 0.2)', borderColor: 'var(--primary-color)' }
-                }}
+                whileHover={{ y: -5, scale: 1.02, boxShadow: '0 15px 35px rgba(212, 175, 55, 0.2)', borderColor: 'var(--primary-color)' }}
                 transition={{ duration: 0.3 }}
-                style={{ overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', borderRadius: '24px' }}
+                style={{ overflow: 'hidden', cursor: 'pointer', display: 'flex', flexDirection: 'column', height: '100%', borderRadius: '24px', opacity: 1 }}
                 onClick={() => handleArtistClick(artist)}
               >
-                <div style={{ position: 'relative', overflow: 'hidden' }}>
+                <div style={{ position: 'relative', overflow: 'hidden', flexShrink: 0 }}>
                   <div style={{ width: '100%', height: '250px', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--accent-secondary)' }}>
                     <Avatar user={artist} size={150} style={{ border: 'none' }} />
                   </div>
@@ -329,7 +360,7 @@ export const Search = () => {
                     <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}><Briefcase size={14}/> {artist.experience_years} Years</span>
                   </div>
                   <div style={{ marginTop: 'auto' }}>
-                    <button className="btn-outline" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', borderRadius: '30px' }}>
+                    <button className="btn-outline mobile-btn-small" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '0.5rem', borderRadius: '30px' }}>
                       View Profile <ChevronRight size={16} />
                     </button>
                   </div>
@@ -367,7 +398,7 @@ export const Search = () => {
             )}
           </div>
           
-          <div style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
+          <div className="mobile-stack" style={{ display: 'flex', gap: '3rem', flexWrap: 'wrap' }}>
             <div style={{ flex: '1 1 400px' }}>
               {selectedArtist.portfolio && selectedArtist.portfolio.length > 0 ? (
                 <img src={selectedArtist.portfolio[0].url} alt="Hero Portfolio" style={{ width: '100%', borderRadius: '24px', marginBottom: '2rem', maxHeight: '500px', objectFit: 'cover', boxShadow: 'var(--glass-shadow)' }} />

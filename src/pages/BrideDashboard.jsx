@@ -146,9 +146,9 @@ export const BrideDashboard = () => {
         )}
       </AnimatePresence>
 
-      <div className="container" style={{ paddingTop: '110px', paddingBottom: '4rem', display: 'flex', gap: '2.5rem' }}>
+      <div className="container dashboard-container" style={{ paddingTop: '110px', paddingBottom: '4rem', display: 'flex', gap: '2.5rem' }}>
         
-      <aside style={{ width: '250px', flexShrink: 0 }}>
+      <aside className="mobile-hide" style={{ width: '250px', flexShrink: 0 }}>
         <div className="glass" style={{ padding: '2rem 1.5rem', borderRadius: '24px', position: 'sticky', top: '110px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid var(--glass-border)' }}>
             <Avatar user={user} size={48} />
@@ -186,7 +186,29 @@ export const BrideDashboard = () => {
 
       <main style={{ flex: 1, minWidth: 0 }}>
         
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+        {/* Mobile Bottom Nav */}
+        <nav className="mobile-bottom-nav">
+          {[
+            { name: 'Overview', icon: LayoutDashboard },
+            { name: 'My Bookings', icon: ShoppingBag },
+            { name: 'Shortlist', icon: Heart },
+            { name: 'Messages', icon: MessageSquare },
+            { name: 'Settings', icon: Settings }
+          ].map((item, i) => {
+            const isActive = activeTab === item.name;
+            return (
+              <a key={i} href="#" onClick={(e) => { e.preventDefault(); setActiveTab(item.name); }} style={{ 
+                color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', 
+                display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none'
+              }}>
+                <item.icon size={20} />
+                <span style={{ fontSize: '0.65rem' }}>{item.name}</span>
+              </a>
+            );
+          })}
+        </nav>
+
+        <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
           <div>
             <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>Hello, {user.name ? user.name.split(' ')[0] : 'User'}</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Welcome to your bridal planning hub.</p>
@@ -214,7 +236,7 @@ export const BrideDashboard = () => {
 
         {activeTab === 'Overview' && (
           <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+            <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
               {[
                 { title: 'Total Bookings', value: myBookings.length, icon: ShoppingBag, color: 'var(--primary-color)' },
                 { title: 'Upcoming Events', value: upcomingCount, icon: Calendar, color: 'var(--primary-color)' },
@@ -245,7 +267,7 @@ export const BrideDashboard = () => {
                    <button onClick={() => setActiveTab('Settings')} className="btn-primary" style={{ borderRadius: '30px', padding: '0.6rem 1.5rem', fontSize: '0.9rem' }}>Set Wedding Date</button>
                  </div>
               ) : (
-                <div className="hide-scrollbar" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', paddingBottom: '1rem' }}>
+                <div className="hide-scrollbar mobile-carousel" style={{ display: 'flex', gap: '1.5rem', overflowX: 'auto', paddingBottom: '1rem' }}>
                   {generateEventsTimeline().map((ev, i) => (
                     <div key={i} className="glass" style={{ minWidth: '240px', padding: '1.5rem', borderRadius: '20px', borderTop: `4px solid ${ev.booked ? 'var(--success-color)' : 'var(--warning-color)'}` }}>
                       <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem' }}>{ev.date}</div>
@@ -264,7 +286,7 @@ export const BrideDashboard = () => {
               )}
             </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2.5rem', alignItems: 'start' }}>
+        <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '2.5rem', alignItems: 'start' }}>
           
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
@@ -424,7 +446,7 @@ export const BrideDashboard = () => {
             {myShortlist.length === 0 ? (
               <p style={{ color: 'var(--text-muted)' }}>Your shortlist is empty. Heart artists to add them here.</p>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
+              <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
                 {myShortlist.map((artist, idx) => (
                   <div key={idx} style={{ padding: '1rem', border: '1px solid var(--glass-border)', borderRadius: '16px', textAlign: 'center', position: 'relative' }}>
                     <button onClick={() => toggleShortlist(user.id, artist.id)} style={{ position: 'absolute', top: '10px', right: '10px', background: 'none', border: 'none', cursor: 'pointer' }}><Heart fill="var(--primary-color)" color="var(--primary-color)" size={20}/></button>
@@ -440,8 +462,8 @@ export const BrideDashboard = () => {
         )}
 
         {activeTab === 'Messages' && (
-          <div className="glass" style={{ display: 'flex', height: '600px', borderRadius: '24px', overflow: 'hidden' }}>
-            <div style={{ width: '300px', borderRight: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column' }}>
+          <div className="glass mobile-stack" style={{ display: 'flex', height: '600px', borderRadius: '24px', overflow: 'hidden' }}>
+            <div className={`mobile-full-width ${chatUser ? 'mobile-hide' : ''}`} style={{ width: '300px', flexShrink: 0, borderRight: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column' }}>
               <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}><h3 style={{ margin: 0 }}>Conversations</h3></div>
               <div style={{ flex: 1, overflowY: 'auto' }}>
                 {chatPartners.length === 0 ? (
@@ -469,7 +491,7 @@ export const BrideDashboard = () => {
               </div>
             </div>
             
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+            <div className={!chatUser ? 'mobile-hide' : ''} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               {!chatUser ? (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'var(--text-muted)' }}>
                   <MessageSquare size={48} style={{ opacity: 0.3, marginBottom: '1rem' }} />
@@ -480,6 +502,7 @@ export const BrideDashboard = () => {
                   return (
                     <>
                       <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <button className="mobile-only btn-outline" onClick={() => setChatUser(null)} style={{ padding: '0.4rem', border: 'none', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer' }}>←</button>
                         <Avatar user={artist} size={48} />
                         <h3 style={{ margin: 0 }}>{artist?.name}</h3>
                       </div>

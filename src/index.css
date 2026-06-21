@@ -37,6 +37,10 @@
   padding: 0;
 }
 
+html, body, #root {
+  overflow-x: hidden;
+  width: 100%;
+}
 body {
   font-family: var(--font-body);
   background-color: var(--bg-color);
@@ -44,7 +48,6 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;
-  overflow-x: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -226,7 +229,7 @@ button {
   gap: 2rem;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .artist-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -246,7 +249,7 @@ button {
   text-align: center;
 }
 
-@media (min-width: 640px) {
+@media (min-width: 768px) {
   .how-it-works-grid {
     grid-template-columns: repeat(2, 1fr);
   }
@@ -263,3 +266,152 @@ button {
   cursor: pointer;
   filter: invert(71%) sepia(42%) saturate(464%) hue-rotate(6deg) brightness(91%) contrast(92%);
 }
+
+/* --- RESPONSIVE UTILITIES --- */
+
+@media (min-width: 768px) {
+  .mobile-only { display: none !important; }
+}
+
+@media (max-width: 1024px) {
+  .desktop-only { display: none !important; }
+}
+
+.mobile-bottom-nav {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  .mobile-only { display: block !important; }
+  .mobile-flex { display: flex !important; }
+  .mobile-hide { display: none !important; }
+  
+  .mobile-stack {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  
+  .mobile-stack-reverse {
+    flex-direction: column-reverse !important;
+    align-items: stretch !important;
+  }
+
+  .mobile-full-width {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .mobile-btn-small {
+    padding: 12px 16px !important;
+    font-size: 14px !important;
+    width: auto !important;
+    max-width: 100% !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+
+  .nav-glass-mobile {
+    height: 60px !important;
+    padding: 0 16px !important;
+    margin: 8px !important;
+    border-radius: 20px !important;
+  }
+  
+  .mobile-nav-logo {
+    font-size: 20px !important;
+  }
+  
+  .mobile-nav-icon {
+    width: 24px !important;
+    height: 24px !important;
+  }
+  
+  .responsive-avatar img, .responsive-avatar div {
+    width: 64px !important;
+    height: 64px !important;
+    font-size: 24px !important;
+  }
+  
+  .mobile-section-gap {
+    margin-bottom: 24px !important;
+  }
+  
+  .mobile-header-stack {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 16px !important;
+  }
+  
+  .artist-grid-2col {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 16px !important;
+  }
+  
+  .mobile-text-center {
+    text-align: center !important;
+  }
+
+  .mobile-carousel {
+    display: flex !important;
+    overflow-x: auto !important;
+    scroll-snap-type: x mandatory !important;
+    gap: 16px !important;
+    padding-bottom: 16px !important;
+    scrollbar-width: none !important;
+    flex-wrap: nowrap !important;
+  }
+  .mobile-carousel::-webkit-scrollbar {
+    display: none;
+  }
+  .mobile-carousel > * {
+    scroll-snap-align: start !important;
+    flex: 0 0 85% !important;
+    min-width: 85% !important;
+  }
+
+  .mobile-nav-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-color);
+    padding: 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    border-bottom: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    z-index: 999;
+  }
+
+  .mobile-bottom-nav {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    background: var(--card-bg) !important;
+    display: flex !important;
+    justify-content: space-around !important;
+    padding: 0.8rem 0.5rem !important;
+    border-top: 1px solid var(--glass-border) !important;
+    z-index: 100 !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+  }
+  
+  .dashboard-container {
+    padding-bottom: 80px !important;
+  }
+  
+  /* Reset padding for containers on mobile to be slightly smaller */
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .hero-heading {
+    font-size: 2.5rem !important;
+  }
+}
+

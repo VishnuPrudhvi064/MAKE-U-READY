@@ -155,10 +155,10 @@ export const ArtistDashboard = () => {
         )}
       </AnimatePresence>
 
-      <div className="container" style={{ paddingTop: '110px', paddingBottom: '4rem', display: 'flex', gap: '2.5rem' }}>
+      <div className="container dashboard-container" style={{ paddingTop: '110px', paddingBottom: '4rem', display: 'flex', gap: '2.5rem' }}>
         
         {/* SIDEBAR */}
-        <aside style={{ width: '250px', flexShrink: 0 }}>
+        <aside className="mobile-hide" style={{ width: '280px', flexShrink: 0 }}>
           <div className="glass" style={{ padding: '2rem 1.5rem', borderRadius: '24px', position: 'sticky', top: '110px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem', paddingBottom: '2rem', borderBottom: '1px solid var(--glass-border)' }}>
               <div style={{ position: 'relative' }}>
@@ -205,7 +205,28 @@ export const ArtistDashboard = () => {
 
         {/* MAIN CONTENT */}
         <main style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
+          {/* Mobile Bottom Nav */}
+          <nav className="mobile-bottom-nav">
+            {[
+              { name: 'Overview', icon: LayoutDashboard },
+              { name: 'Requests', icon: Bell },
+              { name: 'Messages', icon: MessageSquare },
+              { name: 'Settings', icon: Settings }
+            ].map((item, i) => {
+              const isActive = activeTab === item.name;
+              return (
+                <a key={i} href="#" onClick={(e) => { e.preventDefault(); setActiveTab(item.name); }} style={{ 
+                  color: isActive ? 'var(--primary-color)' : 'var(--text-muted)', 
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', textDecoration: 'none'
+                }}>
+                  <item.icon size={20} />
+                  <span style={{ fontSize: '0.65rem' }}>{item.name}</span>
+                </a>
+              );
+            })}
+          </nav>
+
+          <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem', flexWrap: 'wrap', gap: '1.5rem' }}>
             <div>
               <h1 style={{ fontSize: '2.5rem', marginBottom: '0.5rem', fontFamily: 'var(--font-heading)' }}>Artist Dashboard</h1>
               <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Manage your bridal business and portfolio.</p>
@@ -215,7 +236,7 @@ export const ArtistDashboard = () => {
 
           {activeTab === 'Overview' && (
             <>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+              <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 {[
                   { title: 'Pending Requests', value: pendingCount, icon: Bell, color: 'var(--warning-color)' },
                   { title: 'Completed Bookings', value: myBookings.filter(b => b.status === 'COMPLETED').length, icon: CheckCircle, color: 'var(--success-color)' },
@@ -240,7 +261,7 @@ export const ArtistDashboard = () => {
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                     {myBookings.slice().reverse().slice(0, 4).map(b => (
-                      <div key={b.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px' }}>
+                      <div key={b.id} className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1rem', background: 'rgba(0,0,0,0.2)', borderRadius: '12px', gap: '1rem' }}>
                         <div>
                           <div style={{ fontWeight: 600 }}>{b.brideName} - {b.eventType}</div>
                           <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{b.eventDate} • {b.eventPlace}</div>
@@ -269,7 +290,7 @@ export const ArtistDashboard = () => {
                   {myBookings.map((booking, idx) => {
                     const statusColor = booking.status === 'PENDING' ? 'var(--warning-color)' : booking.status === 'CONFIRMED' || booking.status === 'COMPLETED' ? 'var(--success-color)' : 'var(--error-color)';
                     return (
-                      <motion.div key={booking.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="glass" style={{ padding: '1.5rem', borderRadius: '24px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'rgba(0,0,0,0.3)' }}>
+                      <motion.div key={booking.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.1 }} className="glass mobile-stack" style={{ padding: '1.5rem', borderRadius: '24px', display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '1rem', background: 'rgba(0,0,0,0.3)' }}>
                         <div>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
                             <h3 style={{ margin: 0, fontSize: '1.3rem' }}>{booking.eventType}</h3>
@@ -319,7 +340,7 @@ export const ArtistDashboard = () => {
               {showAddPackage && (
                 <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="glass" onSubmit={handleAddPackage} style={{ padding: '2rem', borderRadius: '24px', marginBottom: '2rem' }}>
                   <h3 style={{ marginBottom: '1.5rem', fontSize: '1.3rem' }}>Create New Package</h3>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                  <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
                     <div>
                       <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Package Title</label>
                       <input type="text" required value={pkgTitle} onChange={e => setPkgTitle(e.target.value)} style={{ width: '100%', padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'transparent', color: 'var(--text-main)' }} />
@@ -341,7 +362,7 @@ export const ArtistDashboard = () => {
                 </motion.form>
               )}
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
                 {myPackages.length === 0 ? (
                   <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: 'var(--text-muted)', background: 'rgba(0,0,0,0.2)', borderRadius: '16px' }}>
                     <Package size={48} style={{ opacity: 0.3, margin: '0 auto 1rem auto' }} />
@@ -369,7 +390,7 @@ export const ArtistDashboard = () => {
 
           {activeTab === 'Portfolio' && (
             <div className="glass" style={{ padding: '2rem', borderRadius: '24px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div className="mobile-stack" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
                 <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)' }}>Portfolio Gallery</h2>
                 <input type="file" accept="image/*" ref={fileInputRef} onChange={handleImageUpload} style={{ display: 'none' }} />
                 <button onClick={() => fileInputRef.current.click()} className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', borderRadius: '30px' }}>
@@ -378,7 +399,7 @@ export const ArtistDashboard = () => {
               </div>
               <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>These images will appear on your public profile. High quality before/afters attract more brides!</p>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
+              <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '1rem' }}>
                 <AnimatePresence>
                   {myPortfolio.map(img => (
                     <motion.div key={img.id} initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} style={{ position: 'relative', paddingBottom: '100%', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--glass-border)' }}>
@@ -404,7 +425,7 @@ export const ArtistDashboard = () => {
               <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', marginBottom: '0.5rem' }}>Availability Calendar</h2>
               <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Block out dates when you are already booked or unavailable.</p>
               
-              <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
+              <div className="mobile-stack" style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
                 <input type="date" value={dateToBlock} onChange={e => setDateToBlock(e.target.value)} min={new Date().toISOString().split('T')[0]} className="gold-date-picker" style={{ flex: 1, padding: '0.8rem', borderRadius: '12px', border: '1px solid var(--glass-border)', background: 'transparent', color: 'var(--text-main)' }} />
                 <button onClick={() => toggleBlockedDate(dateToBlock)} className="btn-primary" style={{ borderRadius: '12px' }}>Block Date</button>
               </div>
@@ -426,9 +447,9 @@ export const ArtistDashboard = () => {
           )}
 
           {activeTab === 'Messages' && (
-            <div className="glass" style={{ display: 'flex', height: '600px', borderRadius: '24px', overflow: 'hidden' }}>
+            <div className="glass mobile-stack" style={{ display: 'flex', height: '600px', borderRadius: '24px', overflow: 'hidden' }}>
               {/* Contact List */}
-              <div style={{ width: '300px', borderRight: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column' }}>
+              <div className={`mobile-full-width ${chatUser ? 'mobile-hide' : ''}`} style={{ width: '300px', flexShrink: 0, borderRight: '1px solid var(--glass-border)', background: 'rgba(0,0,0,0.2)', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)' }}><h3 style={{ margin: 0 }}>Conversations</h3></div>
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                   {chatPartners.length === 0 ? (
@@ -449,7 +470,7 @@ export const ArtistDashboard = () => {
               </div>
               
               {/* Chat Area */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <div className={!chatUser ? 'mobile-hide' : ''} style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 {!chatUser ? (
                   <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
                     <MessageSquare size={48} style={{ opacity: 0.5, marginBottom: '1rem' }} />
@@ -457,7 +478,8 @@ export const ArtistDashboard = () => {
                   </div>
                 ) : (
                   <>
-                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', fontWeight: 600, fontSize: '1.2rem' }}>
+                    <div style={{ padding: '1.5rem', borderBottom: '1px solid var(--glass-border)', fontWeight: 600, fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <button className="mobile-only btn-outline" onClick={() => setChatUser(null)} style={{ padding: '0.4rem', border: 'none', background: 'transparent', color: 'var(--text-main)', cursor: 'pointer' }}>←</button>
                       {users.find(u => u.id === chatUser)?.name}
                     </div>
                     <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -481,7 +503,7 @@ export const ArtistDashboard = () => {
             <div className="glass" style={{ padding: '2rem', borderRadius: '24px' }}>
               <h2 style={{ fontSize: '1.8rem', fontFamily: 'var(--font-heading)', marginBottom: '1.5rem' }}>Earnings Dashboard</h2>
               
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+              <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <div style={{ padding: '1.5rem', borderRadius: '16px', background: 'rgba(212,175,55,0.1)', border: '1px solid var(--primary-color)' }}>
                   <div style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Total Released Earnings</div>
                   <div style={{ fontSize: '2rem', fontWeight: 800, color: 'var(--primary-color)' }}>₹{totalEarned.toLocaleString()}</div>
@@ -551,7 +573,7 @@ export const ArtistDashboard = () => {
               <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>This information is shown to brides on your public profile.</p>
               
               <form onSubmit={handleSaveProfile} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Display Name / Studio Name</label>
                     <input type="text" value={profileData.name} onChange={e => setProfileData({...profileData, name: e.target.value})} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
@@ -572,7 +594,7 @@ export const ArtistDashboard = () => {
                   <textarea value={profileData.bio} onChange={e => setProfileData({...profileData, bio: e.target.value})} rows={4} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                <div className="mobile-stack" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
                   <div>
                     <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>Years of Experience</label>
                     <input type="number" min="0" value={profileData.experience_years} onChange={e => setProfileData({...profileData, experience_years: parseInt(e.target.value, 10)})} required style={{ width: '100%', padding: '0.8rem 1rem', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)', color: 'var(--text-main)' }} />
