@@ -1,4 +1,4 @@
-# AI Tools & Workflow Used in MAKE-U-READY
+# AI Tools & Workflow Used in MAKEUREADY
 
 This project was built using an **AI-Assisted Agentic Workflow**, where AI tools handled code execution while every architectural, design, and product decision was directed and verified by the developer.
 
